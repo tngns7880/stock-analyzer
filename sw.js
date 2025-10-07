@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ai-stock-analyzer-cache-v1';
+const CACHE_NAME = 'ai-stock-analyzer-cache-v2'; // 버전을 v2로 변경!
 // 'stock_analyzer.html'을 'index.html'로 변경했습니다.
 const urlsToCache = [
   '/',
@@ -16,7 +16,23 @@ self.addEventListener('install', event => {
   );
 });
 
-// 2. 캐시된 자원 요청 시 반환
+// 2. 구버전 캐시 삭제 (가장 중요한 부분!)
+self.addEventListener('activate', event => {
+  const cacheWhitelist = [CACHE_NAME];
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheWhitelist.indexOf(cacheName) === -1) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+});
+
+// 3. 캐시된 자원 요청 시 반환
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)
