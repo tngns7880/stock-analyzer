@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 주식 투자 분석기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- PWA를 위한 설정 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5"/>
+    <link rel="apple-touch-icon" href="https://placehold.co/192x192/4f46e5/ffffff?text=AI">
+
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #4f46e5;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <div class="container mx-auto p-4 max-w-lg w-full">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8">
+            <header class="text-center mb-6">
+                <h1 class="text-3xl font-bold text-gray-900">AI 주식 투자 분석기</h1>
+                <p class="text-gray-500 mt-2">네이버 증권 정보를 기준으로 투자 방향성을 분석합니다.</p>
+            </header>
+
+            <!-- 종목 입력 -->
+            <div class="mb-4">
+                <label for="stockName" class="block text-sm font-medium text-gray-700 mb-1">종목명 또는 종목코드</label>
+                <input type="text" id="stockName" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="예: 삼성전자 또는 005930">
+            </div>
+
+            <!-- 분석 버튼 -->
+            <div class="text-center mb-6">
+                <button id="analyzeBtn" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition duration-300 shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    AI 분석 시작
+                </button>
+            </div>
+            
+            <!-- 분석 결과 -->
+            <div id="resultSection" class="hidden">
+                <!-- 로딩 스피너 -->
+                <div id="loading" class="flex flex-col items-center justify-center py-8 hidden">
+                    <div class="spinner mb-4"></div>
+                    <p class="text-gray-600">AI가 <span id="loadingStockName" class="font-bold"></span> 종목을 분석중입니다...</p>
+                </div>
+
+                <!-- 결과 디스플레이 -->
+                <div id="resultContent" class="hidden">
+                    <h2 class="text-2xl font-bold text-center mb-4"><span id="resultStockName" class="text-indigo-600"></span> 분석 결과</h2>
+                    <div id="resultCard" class="p-6 rounded-lg border-2">
+                        <p class="text-center text-xl font-semibold mb-2" id="resultOpinion"></p>
+                        <p class="text-center text-gray-600 text-sm mb-4" id="resultScore"></p>
+                        <div class="space-y-3 text-sm">
+                           <p id="summaryProfit"></p>
+                           <p id="summaryStability"></p>
+                           <p id="summaryGrowth"></p>
+                           <p id="summaryValuation"></p>
+                        </div>
+                    </div>
+                    <div class="text-center mt-4">
+                         <a id="naverLink" href="https://finance.naver.com/" target="_blank" class="text-indigo-600 hover:underline text-sm font-semibold">네이버 증권에서 직접 확인 &rarr;</a>
+                    </div>
+                </div>
+            </div>
+
+             <!-- 주의사항 -->
+            <div class="mt-6 text-xs text-gray-400 text-center">
+                <p>⚠️ 본 분석은 일반적인 투자 지표를 기반으로 한 시뮬레이션이며, 실제 데이터와 다를 수 있습니다. 투자 결정의 최종 책임은 투자자 본인에게 있습니다.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // PWA 서비스 워커 등록
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const resultSection = document.getElementById('resultSection');
+        const loading = document.getElementById('loading');
+        const resultContent = document.getElementById('resultContent');
+        const stockNameInput = document.getElementById('stockName');
+
+        analyzeBtn.addEventListener('click', () => {
+            const stockName = stockNameInput.value;
+            if (!stockName) {
+                alert('종목명을 입력해주세요.');
+                return;
+            }
+
+            // UI 초기화 및 로딩 시작
+            resultSection.classList.remove('hidden');
+            resultContent.classList.add('hidden');
+            loading.classList.remove('hidden');
+            document.getElementById('loadingStockName').textContent = stockName;
+            
+            // AI 분석 시뮬레이션 (2.5초)
+            setTimeout(() => {
+                const mockData = generateMockData();
+                const analysisResult = analyzeData(mockData);
+                displayResults(stockName, analysisResult);
+
+                loading.classList.add('hidden');
+                resultContent.classList.remove('hidden');
+            }, 2500);
+        });
+
+        function generateMockData() {
+            // 네이버 증권에서 볼 수 있는 지표들을 기반으로 랜덤 데이터 생성
+            return {
+                roe: (Math.random() * 35 - 10).toFixed(2), // -10% ~ 25%
+                debtRatio: (Math.random() * 250).toFixed(2), // 0% ~ 250%
+                salesGrowth: (Math.random() * 40 - 5).toFixed(2), // -5% ~ 35%
+                per: (Math.random() * 45 + 5).toFixed(2), // 5 ~ 50
+                pbr: (Math.random() * 4.5 + 0.5).toFixed(2), // 0.5 ~ 5
+            };
+        }
+
+        function analyzeData(data) {
+            let score = 0;
+            const comments = {
+                profit: '',
+                stability: '',
+                growth: '',
+                valuation: ''
+            };
+
+            // 1. 수익성 (ROE)
+            if (data.roe > 15) { score += 30; comments.profit = `🟢 **수익성:** ROE ${data.roe}%로 자기자본을 매우 효율적으로 활용하여 높은 수익을 내고 있습니다.`; }
+            else if (data.roe > 5) { score += 15; comments.profit = `🟡 **수익성:** ROE ${data.roe}%로 양호한 수익성을 보여주고 있습니다.`; }
+            else { score += 5; comments.profit = `🔴 **수익성:** ROE ${data.roe}%로 수익성 개선이 필요한 상황입니다.`; }
+
+            // 2. 안정성 (부채비율)
+            if (data.debtRatio < 100) { score += 30; comments.stability = `🟢 **안정성:** 부채비율이 ${data.debtRatio}%로 매우 낮아 재무적으로 안정적입니다.`; }
+            else if (data.debtRatio < 200) { score += 15; comments.stability = `🟡 **안정성:** 부채비율 ${data.debtRatio}%로 양호한 수준이나, 관리가 필요합니다.`; }
+            else { score += 5; comments.stability = `🔴 **안정성:** 부채비율이 ${data.debtRatio}%로 높아 재무적 위험성을 점검해야 합니다.`; }
+
+            // 3. 성장성 (매출액 증가율)
+            if (data.salesGrowth > 10) { score += 20; comments.growth = `🟢 **성장성:** 매출이 전년 대비 ${data.salesGrowth}% 증가하여 높은 성장세를 보입니다.`; }
+            else if (data.salesGrowth > 0) { score += 10; comments.growth = `🟡 **성장성:** 매출이 ${data.salesGrowth}% 증가하며 꾸준한 성장을 유지하고 있습니다.`; }
+            else { score += 0; comments.growth = `🔴 **성장성:** 매출이 ${data.salesGrowth}% 감소하여 성장 동력 확인이 필요합니다.`; }
+            
+            // 4. 가치 (PER, PBR)
+            const valuationScore = (1 / data.per) * 100 + (1 / data.pbr) * 10;
+            if (valuationScore > 15) { score += 20; comments.valuation = `🟢 **가치:** PER ${data.per}, PBR ${data.pbr}로 업종 대비 저평가 매력이 있습니다.`; }
+            else if (valuationScore > 8) { score += 10; comments.valuation = `🟡 **가치:** PER ${data.per}, PBR ${data.pbr}로 적정 주가 수준으로 평가됩니다.`; }
+            else { score += 0; comments.valuation = `🔴 **가치:** PER ${data.per}, PBR ${data.pbr}로 다소 고평가 상태일 수 있습니다.`; }
+
+            let opinion = '';
+            let cardClass = '';
+            if (score >= 70) {
+                opinion = '긍정적 투자 검토';
+                cardClass = 'bg-green-50 border-green-500';
+            } else if (score >= 40) {
+                opinion = '신중한 접근 필요';
+                cardClass = 'bg-yellow-50 border-yellow-500';
+            } else {
+                opinion = '투자 위험성 높음';
+                cardClass = 'bg-red-50 border-red-500';
+            }
+
+            return { score, opinion, comments, cardClass };
+        }
+
+        function displayResults(stockName, result) {
+            document.getElementById('resultStockName').textContent = stockName;
+            document.getElementById('resultOpinion').textContent = result.opinion;
+            document.getElementById('resultScore').textContent = `AI 종합점수: ${result.score} / 100`;
+            
+            document.getElementById('summaryProfit').innerHTML = result.comments.profit;
+            document.getElementById('summaryStability').innerHTML = result.comments.stability;
+            document.getElementById('summaryGrowth').innerHTML = result.comments.growth;
+            document.getElementById('summaryValuation').innerHTML = result.comments.valuation;
+
+            const resultCard = document.getElementById('resultCard');
+            resultCard.className = `p-6 rounded-lg border-2 ${result.cardClass}`;
+            
+            const naverLink = document.getElementById('naverLink');
+            naverLink.href = `https://finance.naver.com/item/main.naver?code=${stockName.match(/\d{6}/) ? stockName : ''}`;
+        }
+    </script>
+</body>
+</html>
+
