@@ -1,7 +1,8 @@
 const CACHE_NAME = 'ai-stock-analyzer-cache-v1';
+// 'stock_analyzer.html'을 'index.html'로 변경했습니다.
 const urlsToCache = [
   '/',
-  '/stock_analyzer.html'
+  '/index.html' 
 ];
 
 // 1. 서비스 워커 설치
